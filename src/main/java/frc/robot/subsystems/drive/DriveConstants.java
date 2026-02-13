@@ -29,7 +29,7 @@ public class DriveConstants {
   public static final double motorReduction = 10.71;
   public static final boolean leftInverted = false;
   public static final boolean rightInverted = true;
-  public static final DCMotor gearbox = DCMotor.getCIM(2);
+  public static final DCMotor gearbox = DCMotor.getKrakenX60(2);
 
   // Velocity PID configuration
   public static final double realKp = 0.0;

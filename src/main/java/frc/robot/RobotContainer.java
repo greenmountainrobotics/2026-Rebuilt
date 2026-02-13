@@ -7,6 +7,8 @@
 
 package frc.robot;
 
+import static frc.robot.subsystems.vision.VisionConstants.*;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
@@ -24,7 +26,6 @@ import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
-import static frc.robot.subsystems.vision.VisionConstants.*;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -52,10 +53,10 @@ public class RobotContainer {
         drive = new Drive(new DriveIOTalonSRX(), new GyroIOPigeon2());
 
         vision =
-                new Vision(
-                        drive::addVisionMeasurement,
-                        new VisionIOPhotonVision(camera0Name, robotToCamera0),
-                        new VisionIOPhotonVision(camera1Name, robotToCamera1));
+            new Vision(
+                drive::addVisionMeasurement,
+                new VisionIOPhotonVision(camera0Name, robotToCamera0),
+                new VisionIOPhotonVision(camera1Name, robotToCamera1));
         break;
 
       case SIM:
@@ -63,10 +64,10 @@ public class RobotContainer {
         drive = new Drive(new DriveIOSim(), new GyroIO() {});
 
         vision =
-                new Vision(
-                        drive::addVisionMeasurement,
-                        new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
-                        new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
+            new Vision(
+                drive::addVisionMeasurement,
+                new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
+                new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
         break;
 
       default:
