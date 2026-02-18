@@ -17,27 +17,33 @@ import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.LTVUnicycleController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.Constants;
-import frc.robot.Constants.Mode;
+import frc.robot.Constants.Constants;
+import frc.robot.Constants.Constants.Mode;
 import frc.robot.util.LocalADStarAK;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
+  private static final double POSE_TRANSLATION_TOLERANCE_METERS = 0.05;
+  private static final double POSE_ROTATION_TOLERANCE_RAD = 0.03;
+
   private final DriveIO io;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
   private final GyroIO gyroIO;
@@ -55,9 +61,27 @@ public class Drive extends SubsystemBase {
   private double lastRightPositionMeters = 0.0;
   private final LTVUnicycleController choreoController = new LTVUnicycleController(0.02);
 
+  // caustam pose stuff -------------------- WIP
+  private final ProfiledPIDController translationController;
+  private final ProfiledPIDController thetaController;
+
   public Drive(DriveIO io, GyroIO gyroIO) {
     this.io = io;
     this.gyroIO = gyroIO;
+
+    translationController =
+        new ProfiledPIDController(
+            12.0,
+            0.0,
+            0.0,
+            new TrapezoidProfile.Constraints(maxSpeedMetersPerSec, 4.0 /* m/s^2 */));
+    translationController.setTolerance(POSE_TRANSLATION_TOLERANCE_METERS);
+
+    thetaController =
+        new ProfiledPIDController(
+            10.0, 0.0, 0.0, new TrapezoidProfile.Constraints(4.0 /* rad/s */, 4.0 /* rad/s^2 */));
+    thetaController.enableContinuousInput(-Math.PI, Math.PI);
+    thetaController.setTolerance(POSE_ROTATION_TOLERANCE_RAD);
 
     // Configure AutoBuilder for PathPlanner
     AutoBuilder.configure(
@@ -182,6 +206,61 @@ public class Drive extends SubsystemBase {
         choreoController.calculate(
             pose, sample.getPose(), ff.vxMetersPerSecond, ff.omegaRadiansPerSecond);
     runClosedLoop(speeds);
+  }
+
+  /** Reset the internal pose controllers for a new target. */
+  public void resetPoseController(Pose2d targetPose) {
+    Pose2d currentPose = getPose();
+    double distance = currentPose.getTranslation().getDistance(targetPose.getTranslation());
+    translationController.reset(distance, 0.0);
+    thetaController.reset(currentPose.getRotation().getRadians(), 0.0);
+  }
+
+  /** Calculate robot-relative speeds to drive toward the target pose. */
+  public ChassisSpeeds calculatePIDVelocity(Pose2d targetPose) {
+    Pose2d currentPose = getPose();
+
+    double distance = currentPose.getTranslation().getDistance(targetPose.getTranslation());
+    double translationVelMetersPerSec = -translationController.calculate(distance, 0.0);
+    Translation2d toTarget = targetPose.getTranslation().minus(currentPose.getTranslation());
+
+    // Within translation tolerance: zero-point turn to target heading only (no forward motion).
+    if (distance < POSE_TRANSLATION_TOLERANCE_METERS) {
+      double omegaRadPerSec =
+          thetaController.calculate(
+              currentPose.getRotation().getRadians(), targetPose.getRotation().getRadians());
+      return new ChassisSpeeds(0.0, 0.0, omegaRadPerSec);
+    }
+
+    // Far from target: turn toward target position and drive forward (differential can't strafe).
+    Rotation2d angleToTarget = toTarget.getAngle();
+    double thetaSetpointRad = angleToTarget.getRadians();
+    double omegaRadPerSec =
+        thetaController.calculate(currentPose.getRotation().getRadians(), thetaSetpointRad);
+
+    // Forward speed scaled by alignment so we don't command lateral motion (vy is ignored by diff
+    // drive).
+    double angleErrorRad = angleToTarget.minus(currentPose.getRotation()).getRadians();
+    double vxRobotMetersPerSec = translationVelMetersPerSec * Math.cos(angleErrorRad);
+
+    return new ChassisSpeeds(vxRobotMetersPerSec, 0.0, omegaRadPerSec);
+  }
+
+  /** Run the custom pose controller (pose -> chassis speeds -> wheel speeds). */
+  public void runPoseController(Pose2d targetPose) {
+    runClosedLoop(calculatePIDVelocity(targetPose));
+  }
+
+  /** Returns true when the robot is within translation + rotation tolerances of the target. */
+  public boolean atPoseSetpoint(Pose2d targetPose) {
+    Pose2d currentPose = getPose();
+    boolean atTranslation =
+        currentPose.getTranslation().getDistance(targetPose.getTranslation())
+            < POSE_TRANSLATION_TOLERANCE_METERS;
+    boolean atRotation =
+        Math.abs(currentPose.getRotation().minus(targetPose.getRotation()).getRadians())
+            < POSE_ROTATION_TOLERANCE_RAD;
+    return atTranslation && atRotation;
   }
 
   /**

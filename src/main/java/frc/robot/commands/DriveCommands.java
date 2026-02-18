@@ -10,6 +10,7 @@ package frc.robot.commands;
 import static frc.robot.subsystems.drive.DriveConstants.maxSpeedMetersPerSec;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -20,6 +21,7 @@ import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -45,6 +47,21 @@ public class DriveCommands {
               speeds.left * maxSpeedMetersPerSec, speeds.right * maxSpeedMetersPerSec);
         },
         drive);
+  }
+
+  /** Drive to a target pose using the custom pose PID loop in {@link Drive}. */
+  public static Command driveToPose(
+      Drive drive, Supplier<Pose2d> targetSupplier, boolean stopWhenDone) {
+    return Commands.sequence(
+        Commands.runOnce(() -> drive.resetPoseController(targetSupplier.get()), drive),
+        Commands.run(() -> drive.runPoseController(targetSupplier.get()), drive)
+            .until(() -> drive.atPoseSetpoint(targetSupplier.get()))
+            .finallyDo(
+                interrupted -> {
+                  if (stopWhenDone) {
+                    drive.stop();
+                  }
+                }));
   }
 
   /** Measures the velocity feedforward constants for the drive. */

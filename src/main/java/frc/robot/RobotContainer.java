@@ -11,11 +11,16 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.AutoBuilder;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants.Constants;
 import frc.robot.commands.DriveCommands;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveIO;
@@ -27,6 +32,7 @@ import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
+import java.util.Map;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -45,6 +51,11 @@ public class RobotContainer {
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+
+  // Shuffleboard pose target (for "Drive to Pose" button)
+  private final GenericEntry targetPoseX;
+  private final GenericEntry targetPoseY;
+  private final GenericEntry targetPoseDegrees;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -91,6 +102,11 @@ public class RobotContainer {
             .resetOdometry("myAuto")
             .andThen(choreoAutoFactory.trajectoryCmd("myAuto")));
 
+    autoChooser.addOption(
+        "Test Pose PID",
+        DriveCommands.driveToPose(
+            drive, () -> new Pose2d(2.5, 4.0, Rotation2d.fromDegrees(90)), true));
+
     // Set up SysId routines
     autoChooser.addOption(
         "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
@@ -105,6 +121,30 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
+    // setting tele target pose
+    ShuffleboardTab poseTab = Shuffleboard.getTab("Pose");
+    targetPoseX =
+        poseTab
+            .add("Target X (m)", 2.5)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .withProperties(Map.of("min", -10, "max", 10))
+            .getEntry();
+    targetPoseY =
+        poseTab
+            .add("Target Y (m)", 4.0)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .withProperties(Map.of("min", -10, "max", 10))
+            .getEntry();
+    targetPoseDegrees =
+        poseTab
+            .add("Target Heading (deg)", 90.0)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .withProperties(Map.of("min", -180, "max", 180))
+            .getEntry();
+    poseTab.add(
+        "Drive to Pose",
+        DriveCommands.driveToPose(drive, this::getTargetPoseFromShuffleboard, true));
+
     // Configure the button bindings
     configureButtonBindings();
   }
@@ -115,6 +155,14 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
+  /** Returns the target pose from Shuffleboard (Pose tab). */
+  private Pose2d getTargetPoseFromShuffleboard() {
+    return new Pose2d(
+        targetPoseX.getDouble(2.5),
+        targetPoseY.getDouble(4.0),
+        Rotation2d.fromDegrees(targetPoseDegrees.getDouble(90.0)));
+  }
+
   private void configureButtonBindings() {
     // Default command, normal arcade drive
     drive.setDefaultCommand(

@@ -25,7 +25,7 @@ public class DriveConstants {
 
   // Motor configuration
   public static final int currentLimit = 60;
-  public static final double wheelRadiusMeters = Units.inchesToMeters(3.0);
+  public static final double wheelRadiusMeters = Units.inchesToMeters(6.0);
   public static final double motorReduction = 10.71;
   public static final boolean leftInverted = false;
   public static final boolean rightInverted = true;
@@ -58,4 +58,16 @@ public class DriveConstants {
               currentLimit,
               2),
           trackWidth);
+
+  // auto alignment stuffs
+  public static final double scoringOffsetX = 0; // distance from tag face
+  public static final double scoringOffsetY = 0;
+
+  // Offsets for aligning to pickup/intake (was "coral station")
+  public static final double pickupOffsetX = 0;
+  public static final double pickupOffsetY = 0;
+
+  // Tolerances
+  public static final double driveTolerance = 0.05;
+  public static final double thetaToleranceRad = 0.03;
 }
