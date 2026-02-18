@@ -10,11 +10,13 @@ package frc.robot.subsystems.drive;
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
+import choreo.trajectory.DifferentialSample;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.controllers.PPLTVController;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.LTVUnicycleController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -51,6 +53,7 @@ public class Drive extends SubsystemBase {
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
   private double lastLeftPositionMeters = 0.0;
   private double lastRightPositionMeters = 0.0;
+  private final LTVUnicycleController choreoController = new LTVUnicycleController(0.02);
 
   public Drive(DriveIO io, GyroIO gyroIO) {
     this.io = io;
@@ -170,6 +173,15 @@ public class Drive extends SubsystemBase {
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(
         rawGyroRotation, getLeftPositionMeters(), getRightPositionMeters(), pose);
+  }
+
+  public void followTrajectory(DifferentialSample sample) {
+    Pose2d pose = getPose();
+    ChassisSpeeds ff = sample.getChassisSpeeds();
+    ChassisSpeeds speeds =
+        choreoController.calculate(
+            pose, sample.getPose(), ff.vxMetersPerSecond, ff.omegaRadiansPerSecond);
+    runClosedLoop(speeds);
   }
 
   /**

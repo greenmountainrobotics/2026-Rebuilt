@@ -31,8 +31,7 @@ public class DriveCommands {
    * Standard joystick drive, where X is the forward-backward axis (positive = forward) and Z is the
    * left-right axis (positive = counter-clockwise).
    */
-  public static Command arcadeDrive(
-      Drive drive, DoubleSupplier xSupplier, DoubleSupplier zSupplier) {
+  public static Command tankDrive(Drive drive, DoubleSupplier xSupplier, DoubleSupplier zSupplier) {
     return Commands.run(
         () -> {
           // Apply deadband
@@ -40,8 +39,7 @@ public class DriveCommands {
           double z = MathUtil.applyDeadband(zSupplier.getAsDouble(), DEADBAND);
 
           // Calculate speeds
-          var speeds = DifferentialDrive.arcadeDriveIK(x, z, true);
-
+          var speeds = DifferentialDrive.tankDriveIK(x, z, true);
           // Apply output
           drive.runClosedLoop(
               speeds.left * maxSpeedMetersPerSec, speeds.right * maxSpeedMetersPerSec);

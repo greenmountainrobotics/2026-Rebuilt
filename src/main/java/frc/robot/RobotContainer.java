@@ -9,6 +9,7 @@ package frc.robot;
 
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
+import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
@@ -81,6 +82,15 @@ public class RobotContainer {
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
+    AutoFactory choreoAutoFactory =
+        new AutoFactory(drive::getPose, drive::setPose, drive::followTrajectory, true, drive);
+
+    autoChooser.addOption(
+        "main Test",
+        choreoAutoFactory
+            .resetOdometry("myAuto")
+            .andThen(choreoAutoFactory.trajectoryCmd("myAuto")));
+
     // Set up SysId routines
     autoChooser.addOption(
         "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
@@ -108,8 +118,7 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // Default command, normal arcade drive
     drive.setDefaultCommand(
-        DriveCommands.arcadeDrive(
-            drive, () -> -controller.getLeftY(), () -> -controller.getRightX()));
+        DriveCommands.tankDrive(drive, () -> controller.getLeftY(), () -> controller.getRightY()));
   }
 
   /**
