@@ -12,7 +12,9 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -30,9 +32,10 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
+import frc.robot.subsystems.vision.VisionIOPhotonVision;    
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import java.util.Map;
+import java.util.Optional;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -56,6 +59,11 @@ public class RobotContainer {
   private final GenericEntry targetPoseX;
   private final GenericEntry targetPoseY;
   private final GenericEntry targetPoseDegrees;
+
+  // Shuffleboard AprilTag align (tag ID 1–32)
+  private final GenericEntry alignTagIdEntry;
+
+  private static final double ALIGN_TO_TAG_OFFSET_METERS = 0.5;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -145,6 +153,21 @@ public class RobotContainer {
         "Drive to Pose",
         DriveCommands.driveToPose(drive, this::getTargetPoseFromShuffleboard, true));
 
+    alignTagIdEntry =
+        poseTab
+            .add("Align to AprilTag ID", 5)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .withProperties(Map.of("min", 1, "max", 32))
+            .getEntry();
+    poseTab.add(
+        "Align to AprilTag",
+        DriveCommands.driveToPose(
+            drive,
+            () ->
+                getTargetPoseFromAprilTag((int) alignTagIdEntry.getDouble(5))
+                    .orElse(drive.getPose()),
+            true));
+
     // Configure the button bindings
     configureButtonBindings();
   }
@@ -161,6 +184,21 @@ public class RobotContainer {
         targetPoseX.getDouble(2.5),
         targetPoseY.getDouble(4.0),
         Rotation2d.fromDegrees(targetPoseDegrees.getDouble(90.0)));
+  }
+
+  /**
+   * Target pose to align in front of an AprilTag (offset so we don't drive into the tag). Returns
+   * empty if the tag ID is not in the layout.
+   */
+  private Optional<Pose2d> getTargetPoseFromAprilTag(int tagId) {
+    var tagPoseOpt = aprilTagLayout.getTagPose(tagId);
+    if (tagPoseOpt.isEmpty()) return Optional.empty();
+
+    Pose3d tag = tagPoseOpt.get();
+    Translation2d tagPos = tag.getTranslation().toTranslation2d();
+    Rotation2d tagHeading = tag.getRotation().toRotation2d();
+    Translation2d offset = new Translation2d(-ALIGN_TO_TAG_OFFSET_METERS, tagHeading);
+    return Optional.of(new Pose2d(tagPos.plus(offset), tagHeading));
   }
 
   private void configureButtonBindings() {
