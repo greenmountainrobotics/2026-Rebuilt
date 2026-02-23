@@ -49,6 +49,17 @@ public class DriveCommands {
         drive);
   }
 
+  /**
+   * Runs the drive motors at a constant low speed for a set duration (e.g. burn-in). Stops when the
+   * timeout is reached or the command is cancelled.
+   */
+  public static Command runMotorsForDuration(
+      Drive drive, double speedMetersPerSec, double timeoutSeconds) {
+    return Commands.run(() -> drive.runClosedLoop(speedMetersPerSec, speedMetersPerSec), drive)
+        .withTimeout(timeoutSeconds)
+        .finallyDo(interrupted -> drive.stop());
+  }
+
   /** Drive to a target pose using the custom pose PID loop in {@link Drive}. */
   public static Command driveToPose(
       Drive drive, Supplier<Pose2d> targetSupplier, boolean stopWhenDone) {

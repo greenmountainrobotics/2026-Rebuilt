@@ -32,7 +32,7 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;    
+import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import java.util.Map;
 import java.util.Optional;
@@ -62,8 +62,6 @@ public class RobotContainer {
 
   // Shuffleboard AprilTag align (tag ID 1–32)
   private final GenericEntry alignTagIdEntry;
-
-  private static final double ALIGN_TO_TAG_OFFSET_METERS = 0.5;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -187,7 +185,8 @@ public class RobotContainer {
   }
 
   /**
-   * Target pose to align in front of an AprilTag (offset so we don't drive into the tag). Returns
+   * Target pose to align in front of an AprilTag (offset so we don't drive into the tag). Uses
+   * VisionConstants.alignToTagOffsetXMeters and alignToTagOffsetYMeters in the tag's frame. Returns
    * empty if the tag ID is not in the layout.
    */
   private Optional<Pose2d> getTargetPoseFromAprilTag(int tagId) {
@@ -197,14 +196,23 @@ public class RobotContainer {
     Pose3d tag = tagPoseOpt.get();
     Translation2d tagPos = tag.getTranslation().toTranslation2d();
     Rotation2d tagHeading = tag.getRotation().toRotation2d();
-    Translation2d offset = new Translation2d(-ALIGN_TO_TAG_OFFSET_METERS, tagHeading);
-    return Optional.of(new Pose2d(tagPos.plus(offset), tagHeading));
+    // Offset in tag frame: +X = forward from tag, +Y = left; then rotate to field frame
+    Translation2d offsetInTagFrame =
+        new Translation2d(alignToTagOffsetXMeters, alignToTagOffsetYMeters);
+    Translation2d worldOffset = offsetInTagFrame.rotateBy(tagHeading);
+    return Optional.of(new Pose2d(tagPos.plus(worldOffset), tagHeading));
   }
 
   private void configureButtonBindings() {
     // Default command, normal arcade drive
     drive.setDefaultCommand(
         DriveCommands.tankDrive(drive, () -> controller.getLeftY(), () -> controller.getRightY()));
+
+    // Run drive motors at low speed for 30 minutes (burn-in / test)
+    controller
+        .back()
+        .onTrue(
+            DriveCommands.runMotorsForDuration(drive, 0.2, 30 * 60).withName("Run Drive 30 min"));
   }
 
   /**

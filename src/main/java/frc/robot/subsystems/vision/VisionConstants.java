@@ -49,4 +49,8 @@ public class VisionConstants {
   public static double linearStdDevMegatag2Factor = 0.5; // More stable than full 3D solve
   public static double angularStdDevMegatag2Factor =
       Double.POSITIVE_INFINITY; // No rotation data available
+
+  // AprilTag align target offset (in tag frame: X = forward from tag face, Y = left)
+  public static double alignToTagOffsetXMeters = 0.5; // distance in front of tag (positive = away)
+  public static double alignToTagOffsetYMeters = 0.0; // lateral offset (positive = left)
 }
