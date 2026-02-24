@@ -27,7 +27,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveIO;
 import frc.robot.subsystems.drive.DriveIOSim;
-import frc.robot.subsystems.drive.DriveIOTalonSRX;
+import frc.robot.subsystems.drive.DriveIOTalonFX;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.vision.Vision;
@@ -68,7 +68,7 @@ public class RobotContainer {
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
-        drive = new Drive(new DriveIOTalonSRX(), new GyroIOPigeon2());
+        drive = new Drive(new DriveIOTalonFX(), new GyroIOPigeon2());
 
         vision =
             new Vision(
