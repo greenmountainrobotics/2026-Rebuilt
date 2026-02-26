@@ -31,9 +31,9 @@ public class DriveConstants {
   public static final boolean rightInverted = true;
   public static final DCMotor gearbox = DCMotor.getKrakenX60(2);
 
-  // Velocity PID configuration
-  public static final double realKp = 0.05;
-  public static final double realKd = 0.05;
+  // Velocity PID configuration (kP/kD = 0 for trajectory follow to avoid oscillation with LTV)
+  public static final double realKp = 0.0;
+  public static final double realKd = 0.0;
   public static final double realKs = 0.05;
   public static final double realKv = 1.2;
 

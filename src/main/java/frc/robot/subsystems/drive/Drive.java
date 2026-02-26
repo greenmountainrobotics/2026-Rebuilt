@@ -60,13 +60,17 @@ public class Drive extends SubsystemBase {
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
   private double lastLeftPositionMeters = 0.0;
   private double lastRightPositionMeters = 0.0;
-  // Softer R (2, 4) reduces jitter vs default (1, 2); Q kept at WPILib defaults
+  // Softer LTV: larger R and smaller Q to reduce back-and-forth oscillation
   private final LTVUnicycleController choreoController =
       new LTVUnicycleController(
-          VecBuilder.fill(0.0625, 0.125, 2.0),
-          VecBuilder.fill(2.0, 4.0),
+          VecBuilder.fill(0.03, 0.06, 1.0),
+          VecBuilder.fill(4.0, 8.0),
           0.02,
           maxSpeedMetersPerSec);
+
+  // Smoothed chassis speeds for trajectory follow (reduces rapid sign flips)
+  private static final double CHOREO_SPEED_SMOOTHING_ALPHA = 0.3;
+  private ChassisSpeeds lastChoreoSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
   // caustam pose stuff -------------------- WIP
   private final ProfiledPIDController translationController;
@@ -209,10 +213,19 @@ public class Drive extends SubsystemBase {
   public void followTrajectory(DifferentialSample sample) {
     Pose2d pose = getPose();
     ChassisSpeeds ff = sample.getChassisSpeeds();
-    ChassisSpeeds speeds =
+    ChassisSpeeds raw =
         choreoController.calculate(
             pose, sample.getPose(), ff.vxMetersPerSecond, ff.omegaRadiansPerSecond);
-    runClosedLoop(speeds);
+    ChassisSpeeds smoothed =
+        new ChassisSpeeds(
+            CHOREO_SPEED_SMOOTHING_ALPHA * raw.vxMetersPerSecond
+                + (1.0 - CHOREO_SPEED_SMOOTHING_ALPHA) * lastChoreoSpeeds.vxMetersPerSecond,
+            CHOREO_SPEED_SMOOTHING_ALPHA * raw.vyMetersPerSecond
+                + (1.0 - CHOREO_SPEED_SMOOTHING_ALPHA) * lastChoreoSpeeds.vyMetersPerSecond,
+            CHOREO_SPEED_SMOOTHING_ALPHA * raw.omegaRadiansPerSecond
+                + (1.0 - CHOREO_SPEED_SMOOTHING_ALPHA) * lastChoreoSpeeds.omegaRadiansPerSecond);
+    lastChoreoSpeeds = smoothed;
+    runClosedLoop(smoothed);
   }
 
   /** Reset the internal pose controllers for a new target. */
