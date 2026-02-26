@@ -16,6 +16,7 @@ import com.pathplanner.lib.controllers.PPLTVController;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.LTVUnicycleController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
@@ -59,7 +60,13 @@ public class Drive extends SubsystemBase {
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
   private double lastLeftPositionMeters = 0.0;
   private double lastRightPositionMeters = 0.0;
-  private final LTVUnicycleController choreoController = new LTVUnicycleController(0.02);
+  // Softer R (2, 4) reduces jitter vs default (1, 2); Q kept at WPILib defaults
+  private final LTVUnicycleController choreoController =
+      new LTVUnicycleController(
+          VecBuilder.fill(0.0625, 0.125, 2.0),
+          VecBuilder.fill(2.0, 4.0),
+          0.02,
+          maxSpeedMetersPerSec);
 
   // caustam pose stuff -------------------- WIP
   private final ProfiledPIDController translationController;

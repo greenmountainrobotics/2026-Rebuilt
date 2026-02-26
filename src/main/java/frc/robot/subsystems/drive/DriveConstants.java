@@ -18,10 +18,10 @@ public class DriveConstants {
 
   // Device CAN IDs
   public static final int pigeonCanId = 9;
-  public static final int leftLeaderCanId = 1;
-  public static final int leftFollowerCanId = 2;
-  public static final int rightLeaderCanId = 3;
-  public static final int rightFollowerCanId = 4;
+  public static final int leftLeaderCanId = 4;
+  public static final int leftFollowerCanId = 3;
+  public static final int rightLeaderCanId = 2;
+  public static final int rightFollowerCanId = 1;
 
   // Motor configuration
   public static final int currentLimit = 60;
@@ -32,10 +32,10 @@ public class DriveConstants {
   public static final DCMotor gearbox = DCMotor.getKrakenX60(2);
 
   // Velocity PID configuration
-  public static final double realKp = 0.0;
-  public static final double realKd = 0.0;
-  public static final double realKs = 0.0;
-  public static final double realKv = 0.1;
+  public static final double realKp = 0.05;
+  public static final double realKd = 0.05;
+  public static final double realKs = 0.05;
+  public static final double realKv = 1.2;
 
   public static final double simKp = 0.05;
   public static final double simKd = 0.0;

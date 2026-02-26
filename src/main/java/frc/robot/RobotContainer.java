@@ -210,7 +210,7 @@ public class RobotContainer {
 
     // Run drive motors at low speed for 30 minutes (burn-in / test)
     controller
-        .back()
+        .a()
         .onTrue(
             DriveCommands.runMotorsForDuration(drive, 0.2, 30 * 60).withName("Run Drive 30 min"));
   }
