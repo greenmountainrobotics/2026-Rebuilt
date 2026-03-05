@@ -63,13 +63,10 @@ public class Drive extends SubsystemBase {
   // Softer LTV: larger R and smaller Q to reduce back-and-forth oscillation
   private final LTVUnicycleController choreoController =
       new LTVUnicycleController(
-          VecBuilder.fill(0.03, 0.06, 1.0),
-          VecBuilder.fill(4.0, 8.0),
-          0.02,
-          maxSpeedMetersPerSec);
+          VecBuilder.fill(0.02, 0.04, 0.6), VecBuilder.fill(6.0, 12.0), 0.02, maxSpeedMetersPerSec);
 
   // Smoothed chassis speeds for trajectory follow (reduces rapid sign flips)
-  private static final double CHOREO_SPEED_SMOOTHING_ALPHA = 0.3;
+  private static final double CHOREO_SPEED_SMOOTHING_ALPHA = 0.1;
   private ChassisSpeeds lastChoreoSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
   // caustam pose stuff -------------------- WIP

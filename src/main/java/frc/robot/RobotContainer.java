@@ -105,8 +105,8 @@ public class RobotContainer {
     autoChooser.addOption(
         "main Test",
         choreoAutoFactory
-            .resetOdometry("Forward")
-            .andThen(choreoAutoFactory.trajectoryCmd("Forward")));
+            .resetOdometry("myAuto")
+            .andThen(choreoAutoFactory.trajectoryCmd("myAuto")));
 
     autoChooser.addOption(
         "Test Pose PID",
