@@ -1,4 +1,3 @@
-
 package frc.robot.subsystems.intake;
 
 import edu.wpi.first.math.MathUtil;

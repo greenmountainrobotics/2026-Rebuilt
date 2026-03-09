@@ -30,6 +30,15 @@ import frc.robot.subsystems.drive.DriveIOSim;
 import frc.robot.subsystems.drive.DriveIOTalonFX;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.IntakeIOSim;
+import frc.robot.subsystems.intake.IntakeIOTalonFX;
+import frc.robot.subsystems.launch.Launch;
+import frc.robot.subsystems.launch.LaunchConstants;
+import frc.robot.subsystems.launch.LaunchIO;
+import frc.robot.subsystems.launch.LaunchIOSim;
+import frc.robot.subsystems.launch.LaunchIOTalonFX;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
@@ -47,6 +56,8 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
+  private final Intake intake;
+  private final Launch launch;
   private final Vision vision;
 
   // Controller
@@ -69,6 +80,8 @@ public class RobotContainer {
       case REAL:
         // Real robot, instantiate hardware IO implementations
         drive = new Drive(new DriveIOTalonFX(), new GyroIOPigeon2());
+        intake = new Intake(new IntakeIOTalonFX());
+        launch = new Launch(new LaunchIOTalonFX());
 
         vision =
             new Vision(
@@ -80,6 +93,8 @@ public class RobotContainer {
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
         drive = new Drive(new DriveIOSim(), new GyroIO() {});
+        intake = new Intake(new IntakeIOSim());
+        launch = new Launch(new LaunchIOSim());
 
         vision =
             new Vision(
@@ -91,6 +106,8 @@ public class RobotContainer {
       default:
         // Replayed robot, disable IO implementations
         drive = new Drive(new DriveIO() {}, new GyroIO() {});
+        intake = new Intake(new IntakeIO() {});
+        launch = new Launch(new LaunchIO() {});
 
         vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
         break;
@@ -204,15 +221,24 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-    // Default command, normal arcade drive
+    // Default command: arcade drive — left stick Y = forward/back, left stick X = turn
     drive.setDefaultCommand(
-        DriveCommands.tankDrive(drive, () -> controller.getLeftY(), () -> controller.getRightY()));
+        DriveCommands.arcadeDrive(
+            drive, () -> controller.getLeftY(), () -> controller.getRightX()));
 
     // Run drive motors at low speed for 30 minutes (burn-in / test)
     controller
         .a()
         .onTrue(
             DriveCommands.runMotorsForDuration(drive, 0.2, 30 * 60).withName("Run Drive 30 min"));
+
+    // Intake: right bumper runs intake while held (full forward voltage)
+    controller.rightBumper().whileTrue(intake.runWithVoltage(() -> 12.0).withName("Intake"));
+
+    // Launch: right trigger runs launcher at set velocity while held
+    controller
+        .rightTrigger()
+        .whileTrue(launch.runAtVelocity(LaunchConstants.shootVelocityRadPerSec).withName("Launch"));
   }
 
   /**

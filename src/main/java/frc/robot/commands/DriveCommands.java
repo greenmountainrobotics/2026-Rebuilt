@@ -29,20 +29,29 @@ public class DriveCommands {
 
   private DriveCommands() {}
 
-  /**
-   * Standard joystick drive, where X is the forward-backward axis (positive = forward) and Z is the
-   * left-right axis (positive = counter-clockwise).
-   */
-  public static Command tankDrive(Drive drive, DoubleSupplier xSupplier, DoubleSupplier zSupplier) {
+  /** Tank drive: left and right stick axes control left and right wheel speeds independently. */
+  public static Command tankDrive(
+      Drive drive, DoubleSupplier leftSupplier, DoubleSupplier rightSupplier) {
     return Commands.run(
         () -> {
-          // Apply deadband
-          double x = MathUtil.applyDeadband(xSupplier.getAsDouble(), DEADBAND);
-          double z = MathUtil.applyDeadband(zSupplier.getAsDouble(), DEADBAND);
+          double left = MathUtil.applyDeadband(leftSupplier.getAsDouble(), DEADBAND);
+          double right = MathUtil.applyDeadband(rightSupplier.getAsDouble(), DEADBAND);
+          drive.runClosedLoop(left * maxSpeedMetersPerSec, right * maxSpeedMetersPerSec);
+        },
+        drive);
+  }
 
-          // Calculate speeds
-          var speeds = DifferentialDrive.tankDriveIK(x, z, true);
-          // Apply output
+  /**
+   * Arcade drive: forward axis (e.g. left Y) controls speed, rotation axis (e.g. left X) controls
+   * turn. Single-stick drive.
+   */
+  public static Command arcadeDrive(
+      Drive drive, DoubleSupplier forwardSupplier, DoubleSupplier rotationSupplier) {
+    return Commands.run(
+        () -> {
+          double forward = MathUtil.applyDeadband(forwardSupplier.getAsDouble(), DEADBAND);
+          double rotation = MathUtil.applyDeadband(rotationSupplier.getAsDouble(), DEADBAND);
+          var speeds = DifferentialDrive.arcadeDriveIK(forward, rotation, true);
           drive.runClosedLoop(
               speeds.left * maxSpeedMetersPerSec, speeds.right * maxSpeedMetersPerSec);
         },
