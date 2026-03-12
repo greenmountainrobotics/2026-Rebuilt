@@ -5,12 +5,12 @@
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.subsystems.launch;
+package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.MathUtil;
 
-/** Simulated launch IO with velocity setpoint and simple first-order response. */
-public class LaunchIOSim implements LaunchIO {
+/** Simulated shooter IO with velocity setpoint and simple first-order response. */
+public class ShooterIOSim implements ShooterIO {
   private static final double DT = 0.02;
   private static final double TIME_CONSTANT = 0.05;
 
@@ -20,7 +20,7 @@ public class LaunchIOSim implements LaunchIO {
   private double appliedVolts = 0.0;
 
   @Override
-  public void updateInputs(LaunchIOInputs inputs) {
+  public void updateInputs(ShooterIOInputs inputs) {
     velocityRadPerSec +=
         (velocitySetpointRadPerSec - velocityRadPerSec) * Math.min(1.0, DT / TIME_CONSTANT);
     positionRad += velocityRadPerSec * DT;

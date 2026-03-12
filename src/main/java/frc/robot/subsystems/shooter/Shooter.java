@@ -5,40 +5,40 @@
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.subsystems.launch;
+package frc.robot.subsystems.shooter;
 
-import static frc.robot.subsystems.launch.LaunchConstants.*;
+import static frc.robot.subsystems.shooter.ShooterConstants.*;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
-public class Launch extends SubsystemBase {
-  private final LaunchIO io;
-  private final LaunchIOInputsAutoLogged inputs = new LaunchIOInputsAutoLogged();
+public class Shooter extends SubsystemBase {
+  private final ShooterIO io;
+  private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
-  public Launch(LaunchIO io) {
+  public Shooter(ShooterIO io) {
     this.io = io;
   }
 
   @Override
   public void periodic() {
     io.updateInputs(inputs);
-    Logger.processInputs("Launch", inputs);
+    Logger.processInputs("Shooter", inputs);
   }
 
-  /** Runs both launch motors at the given velocity (rad/s) with feedforward. */
+  /** Runs both shooter motors at the given velocity (rad/s) with feedforward. */
   public void setVelocity(double radPerSec) {
     double ffVolts = kS * Math.signum(radPerSec) + kV * radPerSec;
     io.setVelocity(radPerSec, ffVolts);
   }
 
-  /** Stops the launcher (0 velocity). */
+  /** Stops the shooter (0 velocity). */
   public void stop() {
     setVelocity(0.0);
   }
 
-  /** Returns a command that runs the launcher at the given velocity until interrupted. */
+  /** Returns a command that runs the shooter at the given velocity until interrupted. */
   public Command runAtVelocity(double radPerSec) {
     return run(() -> setVelocity(radPerSec)).finallyDo(() -> stop());
   }

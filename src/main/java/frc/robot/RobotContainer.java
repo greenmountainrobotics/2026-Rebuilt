@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Constants;
@@ -30,15 +31,19 @@ import frc.robot.subsystems.drive.DriveIOSim;
 import frc.robot.subsystems.drive.DriveIOTalonFX;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.feed.Feed;
+import frc.robot.subsystems.feed.FeedIO;
+import frc.robot.subsystems.feed.FeedIOSim;
+import frc.robot.subsystems.feed.FeedIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOTalonFX;
-import frc.robot.subsystems.launch.Launch;
-import frc.robot.subsystems.launch.LaunchConstants;
-import frc.robot.subsystems.launch.LaunchIO;
-import frc.robot.subsystems.launch.LaunchIOSim;
-import frc.robot.subsystems.launch.LaunchIOTalonFX;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
@@ -57,7 +62,8 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Intake intake;
-  private final Launch launch;
+  private final Feed feed;
+  private final Shooter shooter;
   private final Vision vision;
 
   // Controller
@@ -81,7 +87,8 @@ public class RobotContainer {
         // Real robot, instantiate hardware IO implementations
         drive = new Drive(new DriveIOTalonFX(), new GyroIOPigeon2());
         intake = new Intake(new IntakeIOTalonFX());
-        launch = new Launch(new LaunchIOTalonFX());
+        feed = new Feed(new FeedIOTalonFX());
+        shooter = new Shooter(new ShooterIOTalonFX());
 
         vision =
             new Vision(
@@ -94,7 +101,8 @@ public class RobotContainer {
         // Sim robot, instantiate physics sim IO implementations
         drive = new Drive(new DriveIOSim(), new GyroIO() {});
         intake = new Intake(new IntakeIOSim());
-        launch = new Launch(new LaunchIOSim());
+        feed = new Feed(new FeedIOSim());
+        shooter = new Shooter(new ShooterIOSim());
 
         vision =
             new Vision(
@@ -107,7 +115,8 @@ public class RobotContainer {
         // Replayed robot, disable IO implementations
         drive = new Drive(new DriveIO() {}, new GyroIO() {});
         intake = new Intake(new IntakeIO() {});
-        launch = new Launch(new LaunchIO() {});
+        feed = new Feed(new FeedIO() {});
+        shooter = new Shooter(new ShooterIO() {});
 
         vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
         break;
@@ -221,7 +230,7 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-    // Default command: arcade drive — left stick Y = forward/back, left stick X = turn
+    // Default command: arcade drive — left stick Y = forward/back, right stick X = turn (original)
     drive.setDefaultCommand(
         DriveCommands.arcadeDrive(
             drive, () -> controller.getLeftY(), () -> controller.getRightX()));
@@ -235,10 +244,13 @@ public class RobotContainer {
     // Intake: right bumper runs intake while held (full forward voltage)
     controller.rightBumper().whileTrue(intake.runWithVoltage(() -> 12.0).withName("Intake"));
 
-    // Launch: right trigger runs launcher at set velocity while held
+    // Shooter + Feed: right trigger runs both at same time while held
     controller
         .rightTrigger()
-        .whileTrue(launch.runAtVelocity(LaunchConstants.shootVelocityRadPerSec).withName("Launch"));
+        .whileTrue(
+            Commands.parallel(
+                shooter.runAtVelocity(ShooterConstants.shootVelocityRadPerSec).withName("Shooter"),
+                feed.runAtVoltage(12.0).withName("Feed")));
   }
 
   /**

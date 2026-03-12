@@ -5,9 +5,9 @@
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.subsystems.launch;
+package frc.robot.subsystems.shooter;
 
-import static frc.robot.subsystems.launch.LaunchConstants.*;
+import static frc.robot.subsystems.shooter.ShooterConstants.*;
 import static frc.robot.util.PhoenixUtil.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
@@ -25,10 +25,10 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 
-/** Launch IO implementation for two Kraken (Talon FX) motors with velocity control. */
-public class LaunchIOTalonFX implements LaunchIO {
-  private final TalonFX leader = new TalonFX(launchLeaderCanId);
-  private final TalonFX follower = new TalonFX(launchFollowerCanId);
+/** Shooter IO implementation for two Kraken (Talon FX) motors with velocity control. */
+public class ShooterIOTalonFX implements ShooterIO {
+  private final TalonFX leader = new TalonFX(shooterLeaderCanId);
+  private final TalonFX follower = new TalonFX(shooterFollowerCanId);
 
   private final StatusSignal<Angle> position = leader.getPosition();
   private final StatusSignal<AngularVelocity> velocity = leader.getVelocity();
@@ -38,7 +38,7 @@ public class LaunchIOTalonFX implements LaunchIO {
 
   private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
-  public LaunchIOTalonFX() {
+  public ShooterIOTalonFX() {
     var config = new TalonFXConfiguration();
     config.CurrentLimits.SupplyCurrentLimit = currentLimit;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
@@ -63,7 +63,7 @@ public class LaunchIOTalonFX implements LaunchIO {
   }
 
   @Override
-  public void updateInputs(LaunchIOInputs inputs) {
+  public void updateInputs(ShooterIOInputs inputs) {
     BaseStatusSignal.refreshAll(position, velocity, appliedVolts, leaderCurrent, followerCurrent);
 
     inputs.positionRad = Units.rotationsToRadians(position.getValueAsDouble());

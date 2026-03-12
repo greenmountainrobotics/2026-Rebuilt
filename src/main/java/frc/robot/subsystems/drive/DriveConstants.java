@@ -38,8 +38,8 @@ public class DriveConstants {
   public static final double realKv = 1.2;
 
   public static final double simKp = 0.05;
-  public static final double simKd = 0.0;
-  public static final double simKs = 0.0;
+  public static final double simKd = 0.2;
+  public static final double simKs = 0.5;
   public static final double simKv = 0.227;
 
   // PathPlanner configuration

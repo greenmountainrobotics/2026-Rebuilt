@@ -42,8 +42,8 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
-  private static final double POSE_TRANSLATION_TOLERANCE_METERS = 0.05;
-  private static final double POSE_ROTATION_TOLERANCE_RAD = 0.03;
+  private static final double POSE_TRANSLATION_TOLERANCE_METERS = 0.08;
+  private static final double POSE_ROTATION_TOLERANCE_RAD = 0.08;
 
   private final DriveIO io;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
@@ -79,15 +79,15 @@ public class Drive extends SubsystemBase {
 
     translationController =
         new ProfiledPIDController(
-            12.0,
+            5.0,
             0.0,
             0.0,
-            new TrapezoidProfile.Constraints(maxSpeedMetersPerSec, 4.0 /* m/s^2 */));
+            new TrapezoidProfile.Constraints(maxSpeedMetersPerSec * 0.6, 3.0 /* m/s^2 */));
     translationController.setTolerance(POSE_TRANSLATION_TOLERANCE_METERS);
 
     thetaController =
         new ProfiledPIDController(
-            10.0, 0.0, 0.0, new TrapezoidProfile.Constraints(4.0 /* rad/s */, 4.0 /* rad/s^2 */));
+            3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(2.0 /* rad/s */, 3.0 /* rad/s^2 */));
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     thetaController.setTolerance(POSE_ROTATION_TOLERANCE_RAD);
 
@@ -255,10 +255,11 @@ public class Drive extends SubsystemBase {
     double omegaRadPerSec =
         thetaController.calculate(currentPose.getRotation().getRadians(), thetaSetpointRad);
 
-    // Forward speed scaled by alignment so we don't command lateral motion (vy is ignored by diff
-    // drive).
     double angleErrorRad = angleToTarget.minus(currentPose.getRotation()).getRadians();
-    double vxRobotMetersPerSec = translationVelMetersPerSec * Math.cos(angleErrorRad);
+    // When badly misaligned (> ~90°), turn in place first to avoid weird curved paths and long
+    // spins.
+    double driveScale = Math.abs(angleErrorRad) > Math.PI / 2 ? 0.0 : Math.cos(angleErrorRad);
+    double vxRobotMetersPerSec = translationVelMetersPerSec * driveScale;
 
     return new ChassisSpeeds(vxRobotMetersPerSec, 0.0, omegaRadPerSec);
   }

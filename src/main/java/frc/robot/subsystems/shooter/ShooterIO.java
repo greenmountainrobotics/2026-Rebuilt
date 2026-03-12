@@ -5,13 +5,13 @@
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.subsystems.launch;
+package frc.robot.subsystems.shooter;
 
 import org.littletonrobotics.junction.AutoLog;
 
-public interface LaunchIO {
+public interface ShooterIO {
   @AutoLog
-  public static class LaunchIOInputs {
+  public static class ShooterIOInputs {
     public double positionRad = 0.0;
     public double velocityRadPerSec = 0.0;
     public double appliedVolts = 0.0;
@@ -19,8 +19,8 @@ public interface LaunchIO {
   }
 
   /** Updates the set of loggable inputs. */
-  public default void updateInputs(LaunchIOInputs inputs) {}
+  public default void updateInputs(ShooterIOInputs inputs) {}
 
-  /** Runs both launch motors at the given velocity (rad/s) with feedforward volts. */
+  /** Runs both shooter motors at the given velocity (rad/s) with feedforward volts. */
   public default void setVelocity(double radPerSec, double ffVolts) {}
 }

@@ -5,13 +5,13 @@
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.subsystems.launch;
+package frc.robot.subsystems.shooter;
 
-public class LaunchConstants {
-  /** CAN IDs for the two Kraken (Talon FX) launch motors. */
-  public static final int launchLeaderCanId = 7;
+public class ShooterConstants {
+  /** CAN IDs for the two Kraken (Talon FX) shooter motors. */
+  public static final int shooterLeaderCanId = 7;
 
-  public static final int launchFollowerCanId = 8;
+  public static final int shooterFollowerCanId = 8;
 
   /** Supply current limit (amps) per motor. */
   public static final int currentLimit = 60;
