@@ -15,6 +15,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.controllers.PPLTVController;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.LTVUnicycleController;
@@ -54,22 +55,23 @@ public class Drive extends SubsystemBase {
       new DifferentialDriveKinematics(trackWidth);
   private final double kS = Constants.currentMode == Mode.SIM ? simKs : realKs;
   private final double kV = Constants.currentMode == Mode.SIM ? simKv : realKv;
+  private boolean turboMode = true;
+
   private final DifferentialDrivePoseEstimator poseEstimator =
       new DifferentialDrivePoseEstimator(kinematics, Rotation2d.kZero, 0.0, 0.0, Pose2d.kZero);
   private final SysIdRoutine sysId;
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
   private double lastLeftPositionMeters = 0.0;
   private double lastRightPositionMeters = 0.0;
-  // Softer LTV: larger R and smaller Q to reduce back-and-forth oscillation
+  // LTV: Q = (x, y, theta) tolerance. R = input cost; lower R = stronger commands to reach end.
   private final LTVUnicycleController choreoController =
       new LTVUnicycleController(
-          VecBuilder.fill(0.02, 0.04, 0.6), VecBuilder.fill(6.0, 12.0), 0.02, maxSpeedMetersPerSec);
+          VecBuilder.fill(0.02, 0.04, 1.0), VecBuilder.fill(1.0, 2.0), 0.02, maxSpeedMetersPerSec);
 
-  // Smoothed chassis speeds for trajectory follow (reduces rapid sign flips)
-  private static final double CHOREO_SPEED_SMOOTHING_ALPHA = 0.1;
+  private static final double CHOREO_SPEED_SMOOTHING_ALPHA = 0.5;
   private ChassisSpeeds lastChoreoSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
-  // caustam pose stuff -------------------- WIP
+  // caustam pose stuff
   private final ProfiledPIDController translationController;
   private final ProfiledPIDController thetaController;
 
@@ -91,7 +93,7 @@ public class Drive extends SubsystemBase {
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     thetaController.setTolerance(POSE_ROTATION_TOLERANCE_RAD);
 
-    // Configure AutoBuilder for PathPlanner
+    // lowkuh uslluh
     AutoBuilder.configure(
         this::getPose,
         this::setPose,
@@ -114,7 +116,7 @@ public class Drive extends SubsystemBase {
           Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
         });
 
-    // Configure SysId
+    // Configure SysIduh
     sysId =
         new SysIdRoutine(
             new SysIdRoutine.Config(
@@ -135,10 +137,8 @@ public class Drive extends SubsystemBase {
 
     // Update gyro angle
     if (gyroInputs.connected) {
-      // Use the real gyro angle
-      rawGyroRotation = gyroInputs.yawPosition;
+      rawGyroRotation = gyroInputs.yawPosition; // use ts gyruh
     } else {
-      // Use the angle delta from the kinematics and module deltas
       Twist2d twist =
           kinematics.toTwist2d(
               getLeftPositionMeters() - lastLeftPositionMeters,
@@ -158,15 +158,31 @@ public class Drive extends SubsystemBase {
     runClosedLoop(wheelSpeeds.leftMetersPerSecond, wheelSpeeds.rightMetersPerSecond);
   }
 
-  /** Runs the drive at the desired left and right velocities. */
+  /**
+   * Sets turbo mode (toggled by A). When true, uses {@link DriveConstants#turboKv} for feedforward.
+   */
+  public void setTurbo(boolean turbo) {
+    turboMode = turbo;
+  }
+
+  public boolean getTurbo() {
+    return turboMode;
+  }
+
+  /// runs the drive or somthin idk chat
   public void runClosedLoop(double leftMetersPerSec, double rightMetersPerSec) {
     double leftRadPerSec = leftMetersPerSec / wheelRadiusMeters;
     double rightRadPerSec = rightMetersPerSec / wheelRadiusMeters;
     Logger.recordOutput("Drive/LeftSetpointRadPerSec", leftRadPerSec);
     Logger.recordOutput("Drive/RightSetpointRadPerSec", rightRadPerSec);
 
-    double leftFFVolts = kS * Math.signum(leftRadPerSec) + kV * leftRadPerSec;
-    double rightFFVolts = kS * Math.signum(rightRadPerSec) + kV * rightRadPerSec;
+    double effectiveKv = turboMode ? turboKv : kV;
+    double leftFFVolts = kS * Math.signum(leftRadPerSec) + effectiveKv * leftRadPerSec;
+    double rightFFVolts = kS * Math.signum(rightRadPerSec) + effectiveKv * rightRadPerSec;
+    // Cap feedforward at ±12 V so Talon can use full range; velocity kP adds the rest to reach
+    // setpoint
+    leftFFVolts = MathUtil.clamp(leftFFVolts, -12.0, 12.0);
+    rightFFVolts = MathUtil.clamp(rightFFVolts, -12.0, 12.0);
     io.setVelocity(leftRadPerSec, rightRadPerSec, leftFFVolts, rightFFVolts);
   }
 
@@ -207,12 +223,26 @@ public class Drive extends SubsystemBase {
         rawGyroRotation, getLeftPositionMeters(), getRightPositionMeters(), pose);
   }
 
+  /** Resets smoothing state for Choreo path following. Call at the start of each trajectory. */
+  public void resetChoreoSpeeds() {
+    lastChoreoSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
+  }
+
   public void followTrajectory(DifferentialSample sample) {
     Pose2d pose = getPose();
-    ChassisSpeeds ff = sample.getChassisSpeeds();
+    Pose2d refPose = sample.getPose();
+    // Choreo's getChassisSpeeds() is field-relative; LTV expects robot-relative refs.
+    // Use reference heading (not robot pose) so feedforward direction isn't wrong when pose drifts.
+    ChassisSpeeds ffField = sample.getChassisSpeeds();
+    ChassisSpeeds ffRobot =
+        ChassisSpeeds.fromFieldRelativeSpeeds(
+            ffField.vxMetersPerSecond,
+            ffField.vyMetersPerSecond,
+            ffField.omegaRadiansPerSecond,
+            refPose.getRotation());
     ChassisSpeeds raw =
         choreoController.calculate(
-            pose, sample.getPose(), ff.vxMetersPerSecond, ff.omegaRadiansPerSecond);
+            pose, refPose, ffRobot.vxMetersPerSecond, ffRobot.omegaRadiansPerSecond);
     ChassisSpeeds smoothed =
         new ChassisSpeeds(
             CHOREO_SPEED_SMOOTHING_ALPHA * raw.vxMetersPerSecond

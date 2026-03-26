@@ -24,12 +24,11 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-  private static final double DEADBAND = 0.1;
+  private static final double DEADBAND = 0.05;
   private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
 
   private DriveCommands() {}
 
-  /** Tank drive: left and right stick axes control left and right wheel speeds independently. */
   public static Command tankDrive(
       Drive drive, DoubleSupplier leftSupplier, DoubleSupplier rightSupplier) {
     return Commands.run(
@@ -42,26 +41,39 @@ public class DriveCommands {
   }
 
   /**
-   * Arcade drive: forward axis (e.g. left Y) controls speed, rotation axis (e.g. left X) controls
-   * turn. Single-stick drive.
+   * Arcade drive: forward and rotation from stick, full speed. Turbo (kV) is toggled via A in
+   * RobotContainer. Optional brake supplier (0–1): left trigger scales commanded speed by (1 -
+   * brake), so harder trigger = stronger brake.
    */
   public static Command arcadeDrive(
       Drive drive, DoubleSupplier forwardSupplier, DoubleSupplier rotationSupplier) {
+    return arcadeDrive(drive, forwardSupplier, rotationSupplier, () -> 0.0);
+  }
+
+  /**
+   * Arcade drive with proportional brake. brakeSupplier should return 0–1 (e.g. left trigger);
+   * commanded wheel speeds are scaled by (1 - brake), so harder trigger = harder brake.
+   */
+  public static Command arcadeDrive(
+      Drive drive,
+      DoubleSupplier forwardSupplier,
+      DoubleSupplier rotationSupplier,
+      DoubleSupplier brakeSupplier) {
     return Commands.run(
         () -> {
           double forward = MathUtil.applyDeadband(forwardSupplier.getAsDouble(), DEADBAND);
           double rotation = MathUtil.applyDeadband(rotationSupplier.getAsDouble(), DEADBAND);
+          double brake = MathUtil.clamp(brakeSupplier.getAsDouble(), 0.0, 1.0);
           var speeds = DifferentialDrive.arcadeDriveIK(forward, rotation, true);
+          double scale = 1.0 - brake;
           drive.runClosedLoop(
-              speeds.left * maxSpeedMetersPerSec, speeds.right * maxSpeedMetersPerSec);
+              speeds.left * maxSpeedMetersPerSec * scale,
+              speeds.right * maxSpeedMetersPerSec * scale);
         },
         drive);
   }
 
-  /**
-   * Runs the drive motors at a constant low speed for a set duration (e.g. burn-in). Stops when the
-   * timeout is reached or the command is cancelled.
-   */
+  // ts was designed for just running the motors not auto stupid stupid clay
   public static Command runMotorsForDuration(
       Drive drive, double speedMetersPerSec, double timeoutSeconds) {
     return Commands.run(() -> drive.runClosedLoop(speedMetersPerSec, speedMetersPerSec), drive)
@@ -69,7 +81,6 @@ public class DriveCommands {
         .finallyDo(interrupted -> drive.stop());
   }
 
-  /** Drive to a target pose using the custom pose PID loop in {@link Drive}. */
   public static Command driveToPose(
       Drive drive, Supplier<Pose2d> targetSupplier, boolean stopWhenDone) {
     return Commands.sequence(
@@ -84,23 +95,20 @@ public class DriveCommands {
                 }));
   }
 
-  /** Measures the velocity feedforward constants for the drive. */
   public static Command feedforwardCharacterization(Drive drive) {
     List<Double> velocitySamples = new LinkedList<>();
     List<Double> voltageSamples = new LinkedList<>();
     Timer timer = new Timer();
 
     return Commands.sequence(
-        // Reset data
+        // resuh data
         Commands.runOnce(
             () -> {
               velocitySamples.clear();
               voltageSamples.clear();
               timer.restart();
             }),
-
-        // Accelerate and gather data
-        Commands.run(
+        Commands.run( // acceleruh
                 () -> {
                   double voltage = timer.get() * FF_RAMP_RATE;
                   drive.runOpenLoop(voltage, voltage);
@@ -108,8 +116,7 @@ public class DriveCommands {
                   voltageSamples.add(voltage);
                 },
                 drive)
-
-            // When cancelled, calculate and print results
+            // pruh resulh
             .finallyDo(
                 () -> {
                   int n = velocitySamples.size();

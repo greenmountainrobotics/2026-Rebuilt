@@ -49,6 +49,11 @@ public class DriveIOTalonFX implements DriveIO {
   private VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
   public DriveIOTalonFX() {
+    leftLeader.setNeutralMode(NeutralModeValue.Coast);
+    leftFollower.setNeutralMode(NeutralModeValue.Coast);
+    rightLeader.setNeutralMode(NeutralModeValue.Coast);
+    rightFollower.setNeutralMode(NeutralModeValue.Coast);
+
     var config = new TalonFXConfiguration();
     config.CurrentLimits.SupplyCurrentLimit = currentLimit;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;

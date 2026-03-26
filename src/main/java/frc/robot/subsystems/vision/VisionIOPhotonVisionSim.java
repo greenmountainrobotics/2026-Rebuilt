@@ -16,7 +16,7 @@ import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
 
-/** IO implementation for physics sim using PhotonVision simulator. */
+/** IO implementation for physics sim using Ph otonVision simulator. */
 public class VisionIOPhotonVisionSim extends VisionIOPhotonVision {
   private static VisionSystemSim visionSim;
 

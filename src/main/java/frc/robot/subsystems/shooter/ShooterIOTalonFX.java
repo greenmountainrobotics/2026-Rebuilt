@@ -25,16 +25,18 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 
-/** Shooter IO implementation for two Kraken (Talon FX) motors with velocity control. */
+/** Shooter IO implementation for three Kraken (Talon FX) motors with velocity control. */
 public class ShooterIOTalonFX implements ShooterIO {
   private final TalonFX leader = new TalonFX(shooterLeaderCanId);
   private final TalonFX follower = new TalonFX(shooterFollowerCanId);
+  private final TalonFX follower2 = new TalonFX(shooterFollower2CanId);
 
   private final StatusSignal<Angle> position = leader.getPosition();
   private final StatusSignal<AngularVelocity> velocity = leader.getVelocity();
   private final StatusSignal<Voltage> appliedVolts = leader.getMotorVoltage();
   private final StatusSignal<Current> leaderCurrent = leader.getSupplyCurrent();
   private final StatusSignal<Current> followerCurrent = follower.getSupplyCurrent();
+  private final StatusSignal<Current> follower2Current = follower2.getSupplyCurrent();
 
   private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
@@ -54,24 +56,35 @@ public class ShooterIOTalonFX implements ShooterIO {
             : InvertedValue.CounterClockwise_Positive;
     tryUntilOk(5, () -> follower.getConfigurator().apply(config, 0.25));
 
+    config.MotorOutput.Inverted =
+        follower2Inverted
+            ? InvertedValue.Clockwise_Positive
+            : InvertedValue.CounterClockwise_Positive;
+    tryUntilOk(5, () -> follower2.getConfigurator().apply(config, 0.25));
+
     follower.setControl(new Follower(leader.getDeviceID(), MotorAlignmentValue.Aligned));
+    follower2.setControl(new Follower(leader.getDeviceID(), MotorAlignmentValue.Aligned));
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50.0, position, velocity, appliedVolts, leaderCurrent, followerCurrent);
+        50.0, position, velocity, appliedVolts, leaderCurrent, followerCurrent, follower2Current);
     leader.optimizeBusUtilization();
     follower.optimizeBusUtilization();
+    follower2.optimizeBusUtilization();
   }
 
   @Override
   public void updateInputs(ShooterIOInputs inputs) {
-    BaseStatusSignal.refreshAll(position, velocity, appliedVolts, leaderCurrent, followerCurrent);
+    BaseStatusSignal.refreshAll(
+        position, velocity, appliedVolts, leaderCurrent, followerCurrent, follower2Current);
 
     inputs.positionRad = Units.rotationsToRadians(position.getValueAsDouble());
     inputs.velocityRadPerSec = Units.rotationsToRadians(velocity.getValueAsDouble());
     inputs.appliedVolts = appliedVolts.getValueAsDouble();
     inputs.currentAmps =
         new double[] {
-          leaderCurrent.getValueAsDouble(), followerCurrent.getValueAsDouble(),
+          leaderCurrent.getValueAsDouble(),
+          followerCurrent.getValueAsDouble(),
+          follower2Current.getValueAsDouble(),
         };
   }
 

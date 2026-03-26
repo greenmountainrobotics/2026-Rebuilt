@@ -21,6 +21,6 @@ public interface ShooterIO {
   /** Updates the set of loggable inputs. */
   public default void updateInputs(ShooterIOInputs inputs) {}
 
-  /** Runs both shooter motors at the given velocity (rad/s) with feedforward volts. */
+  /** Runs all shooter motors at the given velocity (rad/s) with feedforward volts. */
   public default void setVelocity(double radPerSec, double ffVolts) {}
 }

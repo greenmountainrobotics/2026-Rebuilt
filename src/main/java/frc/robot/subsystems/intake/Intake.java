@@ -20,7 +20,7 @@ public class Intake extends SubsystemBase {
     Logger.processInputs("Intake", inputs);
   }
 
-  /** Runs both intake motors open-loop at the given voltage (e.g. -12 to 12). */
+  /** Runs the intake motor open-loop at the given voltage (e.g. -12 to 12). */
   public void runVoltage(double volts) {
     io.setVoltage(MathUtil.clamp(volts, -12.0, 12.0));
   }

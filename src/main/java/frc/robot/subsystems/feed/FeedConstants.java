@@ -8,14 +8,9 @@
 package frc.robot.subsystems.feed;
 
 public class FeedConstants {
-  /** CAN IDs for the two Kraken (Talon FX) feed motors. */
-  public static final int feedLeaderCanId = 10;
+  /** CAN ID for the single Kraken (Talon FX) feed motor. */
+  public static final int feedMotorCanId = 10;
 
-  public static final int feedFollowerCanId = 11;
-
-  /** Supply current limit (amps) per motor. */
+  /** Supply current limit (amps). */
   public static final int currentLimit = 40;
-
-  /** Whether the follower is inverted relative to the leader. */
-  public static final boolean followerInverted = false;
 }

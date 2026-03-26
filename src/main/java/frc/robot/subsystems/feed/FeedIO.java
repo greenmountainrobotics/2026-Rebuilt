@@ -21,6 +21,6 @@ public interface FeedIO {
   /** Updates the set of loggable inputs. */
   public default void updateInputs(FeedIOInputs inputs) {}
 
-  /** Runs both feed motors open-loop at the specified voltage. */
+  /** Runs the feed motor open-loop at the specified voltage. */
   public default void setVoltage(double volts) {}
 }

@@ -13,11 +13,10 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 
 public class DriveConstants {
-  public static final double maxSpeedMetersPerSec = 4.0;
+  public static final double maxSpeedMetersPerSec = 5;
   public static final double trackWidth = Units.inchesToMeters(26.0);
 
-  // Device CAN IDs
-  public static final int pigeonCanId = 9;
+  public static final int pigeonCanId = 11;
   public static final int leftLeaderCanId = 4;
   public static final int leftFollowerCanId = 3;
   public static final int rightLeaderCanId = 2;
@@ -26,26 +25,25 @@ public class DriveConstants {
   // Motor configuration
   public static final int currentLimit = 60;
   public static final double wheelRadiusMeters = Units.inchesToMeters(6.0);
-  public static final double motorReduction = 10.71;
-  public static final boolean leftInverted = false;
-  public static final boolean rightInverted = true;
+  public static final double motorReduction = 8.46;
+  public static final boolean leftInverted = true;
+  public static final boolean rightInverted = false;
   public static final DCMotor gearbox = DCMotor.getKrakenX60(2);
 
-  // Velocity PID configuration (kP/kD = 0 for trajectory follow to avoid oscillation with LTV)
-  public static final double realKp = 0.0;
-  public static final double realKd = 0.0;
-  public static final double realKs = 0.05;
-  public static final double realKv = 1.2;
+  public static final double realKp = 0.2;
+  public static final double realKd = 0.001; // keep small dumb dumb silly silly clay
+  public static final double realKs = 0.5;
+  public static final double realKv = 0;
+  public static final double turboKv = .8;
 
-  public static final double simKp = 0.05;
-  public static final double simKd = 0.2;
-  public static final double simKs = 0.5;
-  public static final double simKv = 0.227;
+  public static final double simKp = 0.0;
+  public static final double simKd = 0.0;
+  public static final double simKs = 0.3;
+  public static final double simKv = 2.5;
 
-  // PathPlanner configuration
-  public static final double robotMassKg = 74.088;
-  public static final double robotMOI = 6.883;
-  public static final double wheelCOF = 1.2;
+  public static final double robotMassKg = 103;
+  public static final double robotMOI = 6;
+  public static final double wheelCOF = .9;
   public static final RobotConfig ppConfig =
       new RobotConfig(
           robotMassKg,
@@ -60,14 +58,13 @@ public class DriveConstants {
           trackWidth);
 
   // auto alignment stuffs
-  public static final double scoringOffsetX = 0; // distance from tag face
+  public static final double scoringOffsetX = 0; // distance from tag fuh
   public static final double scoringOffsetY = 0;
 
-  // Offsets for aligning to pickup/intake (was "coral station")
   public static final double pickupOffsetX = 0;
   public static final double pickupOffsetY = 0;
 
-  // Tolerances
+  // Toleruh
   public static final double driveTolerance = 0.05;
   public static final double thetaToleranceRad = 0.03;
 }

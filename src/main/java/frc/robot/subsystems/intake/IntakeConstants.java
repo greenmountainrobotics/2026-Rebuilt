@@ -8,14 +8,9 @@
 package frc.robot.subsystems.intake;
 
 public class IntakeConstants {
-  /** CAN IDs for the two Kraken (Talon FX) intake motors. */
-  public static final int intakeLeaderCanId = 5;
+  /** CAN ID for the single NEO on SparkMax intake motor. */
+  public static final int intakeSparkMaxCanId = 5;
 
-  public static final int intakeFollowerCanId = 6;
-
-  /** Supply current limit (amps) per motor. */
+  /** Smart current limit (amps) for the NEO. */
   public static final int currentLimit = 40;
-
-  /** Whether the follower is inverted relative to the leader (e.g. opposite side of roller). */
-  public static final boolean followerInverted = false;
 }

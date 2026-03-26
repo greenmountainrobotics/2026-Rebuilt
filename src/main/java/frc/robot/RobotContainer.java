@@ -11,6 +11,8 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.AutoBuilder;
+import edu.wpi.first.cscore.HttpCamera;
+import edu.wpi.first.cscore.HttpCamera.HttpCameraKind;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -38,7 +40,7 @@ import frc.robot.subsystems.feed.FeedIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOSim;
-import frc.robot.subsystems.intake.IntakeIOTalonFX;
+import frc.robot.subsystems.intake.IntakeIOSparkMax;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterIO;
@@ -86,7 +88,7 @@ public class RobotContainer {
       case REAL:
         // Real robot, instantiate hardware IO implementations
         drive = new Drive(new DriveIOTalonFX(), new GyroIOPigeon2());
-        intake = new Intake(new IntakeIOTalonFX());
+        intake = new Intake(new IntakeIOSparkMax());
         feed = new Feed(new FeedIOTalonFX());
         shooter = new Shooter(new ShooterIOTalonFX());
 
@@ -128,11 +130,47 @@ public class RobotContainer {
     AutoFactory choreoAutoFactory =
         new AutoFactory(drive::getPose, drive::setPose, drive::followTrajectory, true, drive);
 
+    // BlueMiddle has a split: run both segments so the robot reaches the end pose (~2.53s total).
     autoChooser.addOption(
-        "main Test",
-        choreoAutoFactory
-            .resetOdometry("myAuto")
-            .andThen(choreoAutoFactory.trajectoryCmd("myAuto")));
+        "BlueMiddle",
+        Commands.runOnce(drive::resetChoreoSpeeds)
+            .andThen(choreoAutoFactory.resetOdometry("BlueMiddle", 0))
+            .andThen(choreoAutoFactory.trajectoryCmd("BlueMiddle", 0))
+            .andThen(Commands.runOnce(drive::resetChoreoSpeeds))
+            .andThen(choreoAutoFactory.trajectoryCmd("BlueMiddle", 1)));
+
+    autoChooser.addOption(
+        "Forward",
+        Commands.runOnce(drive::resetChoreoSpeeds)
+            .andThen(choreoAutoFactory.resetOdometry("Forward"))
+            .andThen(choreoAutoFactory.trajectoryCmd("Forward")));
+
+    // Example "between trajectories" auto:
+    // - Reset odometry to the start of the first path
+    // - Follow first trajectory while slowly feeding
+    // - After first path, spin up shooter for a moment
+    // - Follow second trajectory while feeding harder
+    // - Finally, stop shooter + feed
+    autoChooser.addOption(
+        "Choreo: Two Paths + Feed/Shoot Example",
+        Commands.sequence(
+            Commands.runOnce(drive::resetChoreoSpeeds),
+            choreoAutoFactory.resetOdometry("BlueMiddle"),
+            Commands.deadline(
+                choreoAutoFactory.trajectoryCmd("BlueMiddle"),
+                feed.runAtVoltage(4.0).withName("Feed during first path")),
+            Commands.sequence(
+                shooter
+                    .runAtVelocity(ShooterConstants.shootVelocityRadPerSec * 0.8)
+                    .withTimeout(1.5)
+                    .withName("Spin up shooter"),
+                Commands.waitSeconds(0.25)),
+            Commands.runOnce(drive::resetChoreoSpeeds),
+            Commands.deadline(
+                choreoAutoFactory.trajectoryCmd("myAutoPart2"),
+                feed.runAtVoltage(8.0).withName("Feed during second path")),
+            Commands.parallel(
+                Commands.runOnce(feed::stop, feed), Commands.runOnce(shooter::stop, shooter))));
 
     autoChooser.addOption(
         "Test Pose PID",
@@ -192,6 +230,22 @@ public class RobotContainer {
                     .orElse(drive.getPose()),
             true));
 
+    // Camera output for SmartDashboard/Shuffleboard using PhotonVision cameras
+    // Adjust the host/port below if your PhotonVision instance uses a different address.
+    ShuffleboardTab camerasTab = Shuffleboard.getTab("Cameras");
+    HttpCamera cam1 =
+        new HttpCamera(
+            camera0Name,
+            "http://photonvision.local:1181/stream.mjpg",
+            HttpCameraKind.kMJPGStreamer);
+    HttpCamera cam2 =
+        new HttpCamera(
+            camera1Name,
+            "http://photonvision.local:1182/stream.mjpg",
+            HttpCameraKind.kMJPGStreamer);
+    camerasTab.add("Cam 1", cam1).withWidget(BuiltInWidgets.kCameraStream);
+    camerasTab.add("Cam 2", cam2).withWidget(BuiltInWidgets.kCameraStream);
+
     // Configure the button bindings
     configureButtonBindings();
   }
@@ -230,16 +284,15 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-    // Default command: arcade drive — left stick Y = forward/back, right stick X = turn (original)
+    // Left trigger: proportional brake (harder press = stronger brake), 0–1 from axis
     drive.setDefaultCommand(
         DriveCommands.arcadeDrive(
-            drive, () -> controller.getLeftY(), () -> controller.getRightX()));
+            drive,
+            () -> -controller.getLeftY(),
+            () -> controller.getRightX(),
+            () -> controller.getLeftTriggerAxis()));
 
-    // Run drive motors at low speed for 30 minutes (burn-in / test)
-    controller
-        .a()
-        .onTrue(
-            DriveCommands.runMotorsForDuration(drive, 0.2, 30 * 60).withName("Run Drive 30 min"));
+    controller.a().onTrue(Commands.runOnce(() -> drive.setTurbo(!drive.getTurbo()), drive));
 
     // Intake: right bumper runs intake while held (full forward voltage)
     controller.rightBumper().whileTrue(intake.runWithVoltage(() -> 12.0).withName("Intake"));

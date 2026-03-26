@@ -21,6 +21,6 @@ public interface IntakeIO {
   /** Updates the set of loggable inputs. */
   public default void updateInputs(IntakeIOInputs inputs) {}
 
-  /** Runs both intake motors open-loop at the specified voltage. */
+  /** Runs the intake motor open-loop at the specified voltage. */
   public default void setVoltage(double volts) {}
 }

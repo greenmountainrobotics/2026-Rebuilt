@@ -27,7 +27,7 @@ public class Shooter extends SubsystemBase {
     Logger.processInputs("Shooter", inputs);
   }
 
-  /** Runs both shooter motors at the given velocity (rad/s) with feedforward. */
+  /** Runs all three shooter motors at the given velocity (rad/s) with feedforward. */
   public void setVelocity(double radPerSec) {
     double ffVolts = kS * Math.signum(radPerSec) + kV * radPerSec;
     io.setVelocity(radPerSec, ffVolts);

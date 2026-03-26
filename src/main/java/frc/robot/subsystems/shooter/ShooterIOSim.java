@@ -29,7 +29,10 @@ public class ShooterIOSim implements ShooterIO {
     inputs.positionRad = positionRad;
     inputs.velocityRadPerSec = velocityRadPerSec;
     inputs.appliedVolts = appliedVolts;
-    inputs.currentAmps = new double[] {appliedVolts / 12.0 * 5.0, appliedVolts / 12.0 * 5.0};
+    inputs.currentAmps =
+        new double[] {
+          appliedVolts / 12.0 * 5.0, appliedVolts / 12.0 * 5.0, appliedVolts / 12.0 * 5.0
+        };
   }
 
   @Override
