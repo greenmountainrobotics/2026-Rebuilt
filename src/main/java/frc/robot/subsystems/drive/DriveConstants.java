@@ -26,8 +26,8 @@ public class DriveConstants {
   public static final int currentLimit = 60;
   public static final double wheelRadiusMeters = Units.inchesToMeters(6.0);
   public static final double motorReduction = 8.46;
-  public static final boolean leftInverted = true;
-  public static final boolean rightInverted = false;
+  public static final boolean leftInverted = false;
+  public static final boolean rightInverted = true;
   public static final DCMotor gearbox = DCMotor.getKrakenX60(2);
 
   public static final double realKp = 0.2;

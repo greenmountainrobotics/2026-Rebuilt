@@ -49,15 +49,12 @@ public class DriveIOTalonFX implements DriveIO {
   private VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
   public DriveIOTalonFX() {
-    leftLeader.setNeutralMode(NeutralModeValue.Coast);
-    leftFollower.setNeutralMode(NeutralModeValue.Coast);
-    rightLeader.setNeutralMode(NeutralModeValue.Coast);
-    rightFollower.setNeutralMode(NeutralModeValue.Coast);
+
 
     var config = new TalonFXConfiguration();
     config.CurrentLimits.SupplyCurrentLimit = currentLimit;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
-    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     config.Feedback.SensorToMechanismRatio = motorReduction;
     config.Slot0.kP = realKp;
     config.Slot0.kD = realKd;
