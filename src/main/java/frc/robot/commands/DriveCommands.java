@@ -41,9 +41,8 @@ public class DriveCommands {
   }
 
   /**
-   * Arcade drive: forward and rotation from stick, full speed. Turbo (kV) is toggled via A in
-   * RobotContainer. Optional brake supplier (0–1): left trigger scales commanded speed by (1 -
-   * brake), so harder trigger = stronger brake.
+   * Arcade drive: forward and rotation from stick, full speed. Optional brake supplier (0-1): left
+   * trigger scales commanded speed by (1 - brake), so harder trigger = stronger brake.
    */
   public static Command arcadeDrive(
       Drive drive, DoubleSupplier forwardSupplier, DoubleSupplier rotationSupplier) {

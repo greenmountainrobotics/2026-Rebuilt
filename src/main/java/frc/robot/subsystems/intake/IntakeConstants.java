@@ -8,9 +8,9 @@
 package frc.robot.subsystems.intake;
 
 public class IntakeConstants {
-  /** CAN ID for the single NEO on SparkMax intake motor. */
-  public static final int intakeSparkMaxCanId = 5;
+  /** CAN ID for the single Kraken (TalonFX) intake motor. */
+  public static final int intakeMotorCanId = 5;
 
-  /** Smart current limit (amps) for the NEO. */
+  /** Supply current limit (amps) for the TalonFX intake motor. */
   public static final int currentLimit = 40;
 }

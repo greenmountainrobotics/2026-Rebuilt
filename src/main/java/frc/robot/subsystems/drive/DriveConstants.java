@@ -34,7 +34,6 @@ public class DriveConstants {
   public static final double realKd = 0.001; // keep small dumb dumb silly silly clay
   public static final double realKs = 0.5;
   public static final double realKv = 0;
-  public static final double turboKv = .8;
 
   public static final double simKp = 0.0;
   public static final double simKd = 0.0;

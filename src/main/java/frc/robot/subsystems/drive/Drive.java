@@ -55,7 +55,6 @@ public class Drive extends SubsystemBase {
       new DifferentialDriveKinematics(trackWidth);
   private final double kS = Constants.currentMode == Mode.SIM ? simKs : realKs;
   private final double kV = Constants.currentMode == Mode.SIM ? simKv : realKv;
-  private boolean turboMode = true;
 
   private final DifferentialDrivePoseEstimator poseEstimator =
       new DifferentialDrivePoseEstimator(kinematics, Rotation2d.kZero, 0.0, 0.0, Pose2d.kZero);
@@ -158,17 +157,6 @@ public class Drive extends SubsystemBase {
     runClosedLoop(wheelSpeeds.leftMetersPerSecond, wheelSpeeds.rightMetersPerSecond);
   }
 
-  /**
-   * Sets turbo mode (toggled by A). When true, uses {@link DriveConstants#turboKv} for feedforward.
-   */
-  public void setTurbo(boolean turbo) {
-    turboMode = turbo;
-  }
-
-  public boolean getTurbo() {
-    return turboMode;
-  }
-
   /// runs the drive or somthin idk chat
   public void runClosedLoop(double leftMetersPerSec, double rightMetersPerSec) {
     double leftRadPerSec = leftMetersPerSec / wheelRadiusMeters;
@@ -176,9 +164,8 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("Drive/LeftSetpointRadPerSec", leftRadPerSec);
     Logger.recordOutput("Drive/RightSetpointRadPerSec", rightRadPerSec);
 
-    double effectiveKv = turboMode ? turboKv : kV;
-    double leftFFVolts = kS * Math.signum(leftRadPerSec) + effectiveKv * leftRadPerSec;
-    double rightFFVolts = kS * Math.signum(rightRadPerSec) + effectiveKv * rightRadPerSec;
+    double leftFFVolts = kS * Math.signum(leftRadPerSec) + kV * leftRadPerSec;
+    double rightFFVolts = kS * Math.signum(rightRadPerSec) + kV * rightRadPerSec;
     // Cap feedforward at ±12 V so Talon can use full range; velocity kP adds the rest to reach
     // setpoint
     leftFFVolts = MathUtil.clamp(leftFFVolts, -12.0, 12.0);

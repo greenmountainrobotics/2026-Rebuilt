@@ -40,7 +40,7 @@ import frc.robot.subsystems.feed.FeedIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOSim;
-import frc.robot.subsystems.intake.IntakeIOSparkMax;
+import frc.robot.subsystems.intake.IntakeIOTalonFX;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterIO;
@@ -88,7 +88,7 @@ public class RobotContainer {
       case REAL:
         // Real robot, instantiate hardware IO implementations
         drive = new Drive(new DriveIOTalonFX(), new GyroIOPigeon2());
-        intake = new Intake(new IntakeIOSparkMax());
+        intake = new Intake(new IntakeIOTalonFX());
         feed = new Feed(new FeedIOTalonFX());
         shooter = new Shooter(new ShooterIOTalonFX());
 
@@ -288,11 +288,9 @@ public class RobotContainer {
     drive.setDefaultCommand(
         DriveCommands.arcadeDrive(
             drive,
-            () -> -controller.getLeftY(),
+            () -> controller.getLeftY(),
             () -> controller.getRightX(),
             () -> controller.getLeftTriggerAxis()));
-
-    controller.a().onTrue(Commands.runOnce(() -> drive.setTurbo(!drive.getTurbo()), drive));
 
     // Intake: right bumper runs intake while held (full forward voltage)
     controller.rightBumper().whileTrue(intake.runWithVoltage(() -> 12.0).withName("Intake"));

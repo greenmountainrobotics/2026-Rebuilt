@@ -24,7 +24,7 @@ public class IntakeIOSparkMax implements IntakeIO {
   private static final double RADIANS_PER_ROTATION = 2.0 * Math.PI;
   private static final double RAD_PER_SEC_PER_RPM = RADIANS_PER_ROTATION / 60.0;
 
-  private final SparkMax motor = new SparkMax(intakeSparkMaxCanId, MotorType.kBrushless);
+  private final SparkMax motor = new SparkMax(intakeMotorCanId, MotorType.kBrushless);
   private final RelativeEncoder encoder = motor.getEncoder();
 
   public IntakeIOSparkMax() {

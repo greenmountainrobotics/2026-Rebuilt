@@ -50,7 +50,6 @@ public class DriveIOTalonFX implements DriveIO {
 
   public DriveIOTalonFX() {
 
-
     var config = new TalonFXConfiguration();
     config.CurrentLimits.SupplyCurrentLimit = currentLimit;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
